@@ -4,7 +4,7 @@ module Doodads
   module CSSStrategies
     class MaintainableCSS < Base
       def child_name_for(*chain)
-        class_names = chain.inject([]) {|class_names, child| class_names + [child.class_name] }
+        class_names = chain.inject([]) {|class_names, child| class_names + [object_to_class_name(child)] }
         class_names.join("-")
       end
 

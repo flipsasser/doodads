@@ -6,5 +6,9 @@ module Doodads
       @tagname = tagname
       @options = options
     end
+
+    def class_name
+      @options[:class]
+    end
   end
 end

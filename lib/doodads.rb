@@ -8,6 +8,8 @@ require "doodads/registry"
 module  Doodads
   extend Registry
 
+  autoload(:DSL, "doodads/dsl")
+
   def self.config
     @config ||= Config.new(active_modifier: "active", css_strategy: :maintainable_css)
     yield @config if block_given?

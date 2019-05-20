@@ -3,10 +3,7 @@ module Doodads
     def deep_merge_options(*option_sets)
       options = {}
       option_sets.each do |option_set|
-        # Manually redirect class_name into class
-        merge_option_values(:class, option_set.delete(:class_name), options) if option_set.key?(:class_name)
-
-        # Merge all other options
+        # Merge the option sets together
         option_set.each do |option, value|
           merge_option_values(option, value, options)
         end
@@ -30,7 +27,7 @@ module Doodads
 
     def options_for_component(component, *option_sets)
       additional_options = deep_merge_options(*option_sets)
-      default_options = {class_name: component.class_name(additional_options)}
+      default_options = {class: component.class_name(additional_options)}
       deep_merge_options(default_options, additional_options)
     end
 
@@ -42,13 +39,23 @@ module Doodads
       # Capture the sub-component contents
       options = args.extract_options!
       url = if component.link?
-        # If we received content and a url, pull the URL from the middle -
-        # otherwise we didn't receive content, so grab it from the front of the
-        # args array
-        args.length >= 2 ? args.delete_at(1) : args.shift
+        if args.length >= 2
+          # If we received content and a url, pull the URL from the second
+          # argument
+          args.delete_at(1)
+        elsif block_given?
+          # We have 0-1 arguments and a content block - so pull the URL from
+          # the first argument
+          args.shift
+        else
+          nil
+        end
       else
         nil
       end
+
+      raise "You must provide a URL argument for link components" if url.nil? && !component.link_optional?
+
       content = args.shift
 
       content ||= "".html_safe
@@ -59,16 +66,23 @@ module Doodads
       containers = component.hierarchy.reverse
       root_container = containers.pop
       content = render_component_container(component, containers.pop, content) while containers.any?
+
+      # Wrap the content in a link (if needed)
+      content = link_to(url, class: component.child_class_name("link")) { content } if component.link_nested? && url.present?
+
+      # Combine the remaining options and context into a set of options for the root container
       context_root = previous_component&.root
       nested_component_options = context_root.present? && component.root != context_root ? {class: component.child_class_name(context_root)} : {}
+      root_options = options_for_component(component, options, root_container.options, nested_component_options)
 
-      # Unset the current rendering leaf
+      # Unset the current rendering leaf before returning
       @current_component = previous_component
 
-      root_options = options_for_component(component, options, root_container.options, nested_component_options)
-      if component.link?
+      if component.link? && url.present? && !component.link_nested?
+        # Return a link if the component IS a link at its root
         link_to(url, root_options) { content }
       else
+        # Return a non-link container wrapping the content
         content_tag(root_container.tagname, root_options) { content }
       end
     end

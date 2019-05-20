@@ -14,6 +14,17 @@ module Doodads
         raise NotImplementedError.new("#{self.class}#modifier_name_for(name, modifier:) is not implemented")
       end
 
+      private
+
+      def object_to_class_name(object)
+        if object.respond_to? :class_name
+          object.class_name
+        elsif object.is_a? Hash
+          object[:class] || object["class"]
+        else
+          object.to_s
+        end
+      end
     end
   end
 end

@@ -35,7 +35,7 @@ module Doodads
       @context_component = previous_context
     end
 
-    def modifier(name, default = false)
+    def modifier(name, default = name)
       @context_component.add_modifier(name, default)
     end
 
@@ -46,9 +46,9 @@ module Doodads
       end
     end
 
-    def modifier_set(name, defaults)
+    def modifier_set(name, options)
       @modifiers ||= {}
-      @modifiers[name] = defaults
+      @modifiers[name] = options.is_a?(Array) ? Hash[*options.map {|option| [option, option]}.flatten] : options
     end
   end
 end
