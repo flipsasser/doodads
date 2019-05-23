@@ -21,7 +21,8 @@ module Doodads
       component_registry[name] = component
 
       define_method(name) do |*args, &block|
-        component = (@current_component && @current_component.registry[name]) || Doodads.registry[name]
+        component = (@current_component && @current_component.find_component(name)) || Doodads.registry[name]
+        raise ComponentMissingError.new(name, @current_component) unless component.present?
         render_component(component, *args, &block)
       end
 
@@ -49,6 +50,31 @@ module Doodads
     def modifier_set(name, options)
       @modifiers ||= {}
       @modifiers[name] = options.is_a?(Array) ? Hash[*options.map {|option| [option, option]}.flatten] : options
+    end
+  end
+
+  class ComponentMissingError < StandardError
+    def initialize(name, context)
+      context_chain = []
+      parent = context
+      while parent.present?
+        context_chain.unshift(parent.name)
+        parent = parent.parent
+      end
+
+      message = %{Could not find component "#{name}"}
+      message << %{, even as a subcomponent of "#{context_chain.join(" > ")}"} if context_chain.any?
+      message << ". Available root components are #{component_list(Doodads)}"
+      message << ", and available context-specific components are #{component_list(context)}" if context.present?
+      message << "."
+
+      super message
+    end
+
+    private
+
+    def component_list(root)
+      root.registry.keys.map {|name| name.to_s.inspect }.to_sentence
     end
   end
 end

@@ -6,7 +6,7 @@ module Doodads
   class Component
     include Doodads::Registry
 
-    attr_reader :hierarchy, :name, :parent
+    attr_reader :hierarchy, :link_class_name, :name, :parent
 
     def self.css_strategy(strategy)
       @css_strategies ||= {}.with_indifferent_access
@@ -15,15 +15,21 @@ module Doodads
 
     def initialize(name, options = {}, &block)
       @name = name
-      @css_strategy = options[:css_strategy] || Doodads.config.css_strategy
+      @css_strategy = options.delete(:css_strategy) || Doodads.config.css_strategy
 
-      @parent = options[:parent]
+      @parent = options.delete(:parent)
       @class_name = css_strategy.class_name_for(options[:class] || name, parent: @parent)
-      @link = options[:link]
 
+      # Link options
+      @link = options.delete(:link)
+      @link_optional = options.delete(:link_optional)
+      @link_class_name = child_class_name(options.delete(:link_class) || Doodads.config.link_class) if @link.present?
+      add_modifier(:has_link, options.delete(:link_modifier) || Doodads.config.link_modifier) if @link == :nested
+
+      # Container options
       @hierarchy = []
-      tagname = options[:tagname] || :div
-      add_container(tagname, options.except(:class, :css_strategy, :link, :parent, :tagname))
+      tagname = options.delete(:tagname) || :div
+      add_container(tagname, options)
 
       instance_eval(&block) if block_given?
     end
@@ -46,11 +52,13 @@ module Doodads
     def class_name(options = {})
       return @class_name unless @modifiers.present?
 
+      # Step through options and pull out any modifiers that we'll need to add
+      # to our base class name
       class_names = [@class_name]
       options.each do |option, value|
         if @modifiers.key?(option)
           options.delete(option)
-          class_names.push(css_strategy.modifier_name_for(@class_name, modifier: @modifiers[option]))
+          class_names.push(css_strategy.modifier_name_for(@class_name, modifier: @modifiers[option])) if value
         end
       end
 
@@ -59,6 +67,12 @@ module Doodads
 
     def child_class_name(*children)
       css_strategy.child_name_for(self, *children)
+    end
+
+    def find_component(name)
+      component = registry[name]
+      component = parent.find_component(name) if component.nil? && parent.present?
+      component
     end
 
     def link?
@@ -70,7 +84,7 @@ module Doodads
     end
 
     def link_optional?
-      !link? || @link == :optional
+      !link? || @link_optional || @link == :optional
     end
 
     def root

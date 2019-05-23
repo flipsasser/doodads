@@ -1,29 +1,28 @@
+# TODO: Support detection of sub-components and make them adjacent to container
+# content, rather than within it. e.g.
+#
+# component :whatever { container :div; component :edit, link: true }
+#
+# should allow us to do something like
+#
+# <%= whatever("Title goes here") { edit("Edit Title", edit_title_path) } %>
+#
+# which should produce:
+#
+# <div class="whatever"><div>Title goes here</div><a href="/titles/1/edit">Edit Title</a></div>
+#
+# Currently the above produces something slightly more intuitive but less
+# useful:
+#
+# <div class="whatever"><div>Title goes here <a href="/titles/1/edit">Edit Title</a></div></div>
+#
+# Ideally we'd like to support hierarchy derived from where the subcomponent
+# was defined, e.g. in the container or outside of it.
+require "doodads/merge_options"
+
 module Doodads
   module Renderer
-    def deep_merge_options(*option_sets)
-      options = {}
-      option_sets.each do |option_set|
-        # Merge the option sets together
-        option_set.each do |option, value|
-          merge_option_values(option, value, options)
-        end
-      end
-
-      options
-    end
-
-    def merge_option_values(option, value, options = {})
-      case options[option]
-      when String
-        options[option] = [options[option], value].join(" ")
-      when Array
-        options[option].push(*value)
-      when Hash
-        options[option].deep_merge!(value)
-      else
-        options[option] = value
-      end
-    end
+    include MergeOptions
 
     def options_for_component(component, *option_sets)
       additional_options = deep_merge_options(*option_sets)
@@ -68,12 +67,20 @@ module Doodads
       content = render_component_container(component, containers.pop, content) while containers.any?
 
       # Wrap the content in a link (if needed)
-      content = link_to(url, class: component.child_class_name("link")) { content } if component.link_nested? && url.present?
+      has_link = component.link? && url.present?
+      has_nested_link = has_link && component.link_nested?
+      content = link_to(url, class: component.link_class_name) { content } if has_nested_link
 
       # Combine the remaining options and context into a set of options for the root container
       context_root = previous_component&.root
-      nested_component_options = context_root.present? && component.root != context_root ? {class: component.child_class_name(context_root)} : {}
-      root_options = options_for_component(component, options, root_container.options, nested_component_options)
+      nested_component_options = context_root.present? && component.root != context_root ? {class: context_root.child_class_name(component)} : {}
+      root_options = options_for_component(
+        component,
+        options, # User supplied arguments
+        root_container.options, # The root container of the component hierarchy's options
+        nested_component_options, # Options inherited from a root component outside of this component's hierarchy
+        has_nested_link ? { has_link: true } : {} # Options based on link nesting
+      )
 
       # Unset the current rendering leaf before returning
       @current_component = previous_component
