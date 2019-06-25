@@ -62,6 +62,7 @@ module Doodads
 
       # Wrap the content in the component hierarchy, applying additional
       # options
+      tagname = options.delete(:tagname)
       containers = component.hierarchy.reverse
       root_container = containers.pop
       content = render_component_container(component, containers.pop, content) while containers.any?
@@ -90,7 +91,7 @@ module Doodads
         link_to(url, root_options) { content }
       else
         # Return a non-link container wrapping the content
-        content_tag(root_container.tagname, root_options) { content }
+        content_tag(tagname || root_container.tagname, root_options) { content }
       end
     end
 
