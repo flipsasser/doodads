@@ -1,7 +1,7 @@
 module Doodads
   module MergeOptions
     def deep_merge_options(*option_sets)
-      options = {}
+      options = {}.with_indifferent_access
       option_sets.each do |option_set|
         # Merge the option sets together
         option_set.each do |option, value|
