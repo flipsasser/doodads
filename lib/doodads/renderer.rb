@@ -22,12 +22,20 @@ require "doodads/merge_options"
 
 module Doodads
   module Renderer
-    include MergeOptions
+    include Doodads::MergeOptions
 
     def options_for_component(component, *option_sets)
       additional_options = deep_merge_options(*option_sets)
       default_options = {class: component.class_name(additional_options)}
       deep_merge_options(default_options, additional_options)
+    end
+
+    def component_path_is_active?(path, exact: false)
+      return false unless path.present?
+
+      @uri ||= URI.parse(request.url)
+      path = URI.parse(path).path if path.match?(Doodads::URL_TEST)
+      exact ? path == @uri.path : @uri.path.match(/^#{path}/)
     end
 
     def render_component(component, *args, &block)
@@ -46,11 +54,7 @@ module Doodads
           # We have 0-1 arguments and a content block - so pull the URL from
           # the first argument
           args.shift
-        else
-          nil
         end
-      else
-        nil
       end
 
       raise "You must provide a URL argument for link components" if url.nil? && !component.link_optional?
@@ -62,15 +66,19 @@ module Doodads
 
       # Wrap the content in the component hierarchy, applying additional
       # options
-      tagname = options.delete(:tagname)
       containers = component.hierarchy.reverse
       root_container = containers.pop
       content = render_component_container(component, containers.pop, content) while containers.any?
 
       # Wrap the content in a link (if needed)
+      tagname = options.delete(:tagname)
       has_link = component.link? && url.present?
       has_nested_link = has_link && component.link_nested?
-      content = link_to(url, class: component.link_class_name) { content } if has_nested_link
+      path_is_active = has_link && component_path_is_active?(url, exact: options.delete(:exact) { false })
+      if has_nested_link
+        link_options = component.link_options(path_is_active, class: component.link_class_name)
+        content = link_to(url, link_options) { content }
+      end
 
       # Combine the remaining options and context into a set of options for the root container
       context_root = previous_component&.root
@@ -88,7 +96,7 @@ module Doodads
 
       if component.link? && url.present? && !component.link_nested?
         # Return a link if the component IS a link at its root
-        link_to(url, root_options) { content }
+        link_to(url, component.link_options(path_is_active, root_options)) { content }
       else
         # Return a non-link container wrapping the content
         content_tag(tagname || root_container.tagname, root_options) { content }

@@ -1,9 +1,11 @@
 require "doodads/container"
 require "doodads/css_strategies"
+require "doodads/merge_options"
 require "doodads/registry"
 
 module Doodads
   class Component
+    include Doodads::MergeOptions
     include Doodads::Registry
 
     attr_reader :hierarchy, :link_class_name, :name, :parent
@@ -49,6 +51,10 @@ module Doodads
       @modifiers[name] = value
     end
 
+    def active_class_name_for(class_name = @class_name)
+      css_strategy.modifier_name_for(class_name, modifier: Doodads.config.active_modifier)
+    end
+
     def class_name(options = {})
       return @class_name unless @modifiers.present?
 
@@ -77,6 +83,11 @@ module Doodads
 
     def link?
       !!@link
+    end
+
+    def link_options(is_active, options = {})
+      options = deep_merge_options(options, class: active_class_name_for(options[:class] || @class_name)) if is_active
+      options
     end
 
     def link_nested?
