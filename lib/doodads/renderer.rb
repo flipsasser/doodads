@@ -30,7 +30,9 @@ module Doodads
       deep_merge_options(default_options, additional_options)
     end
 
-    def component_path_is_active?(path, exact: false)
+    def component_path_is_active?(path, options = {})
+      exact = options.delete(:exact)
+      return options[Doodads.config.active_modifier] if options.key?(Doodads.config.active_modifier)
       return false unless path.present?
 
       @uri ||= URI.parse(request.url)
@@ -45,6 +47,7 @@ module Doodads
 
       # Capture the sub-component contents
       options = args.extract_options!
+      options = options.with_indifferent_access
       url = if component.link?
         if args.length >= 2
           # If we received content and a url, pull the URL from the second
@@ -71,16 +74,16 @@ module Doodads
       content = render_component_container(component, containers.pop, content) while containers.any?
 
       # Wrap the content in a link (if needed)
-      tagname = options.delete(:tagname)
       has_link = component.link? && url.present?
       has_nested_link = has_link && component.link_nested?
-      path_is_active = has_link && component_path_is_active?(url, exact: options.delete(:exact) { false })
+      path_is_active = has_link && component_path_is_active?(url, options)
       if has_nested_link
-        link_options = component.link_options(path_is_active, class: component.link_class_name)
+        link_options = component.link_options(path_is_active, options.merge(class: component.link_class_name))
         content = link_to(url, link_options) { content }
       end
 
       # Combine the remaining options and context into a set of options for the root container
+      tagname = options.delete(:tagname) { root_container.tagname }
       context_root = previous_component&.root
       nested_component_options = context_root.present? && component.root != context_root ? {class: context_root.child_class_name(component)} : {}
       root_options = options_for_component(
@@ -99,7 +102,7 @@ module Doodads
         link_to(url, component.link_options(path_is_active, root_options)) { content }
       else
         # Return a non-link container wrapping the content
-        content_tag(tagname || root_container.tagname, root_options) { content }
+        content_tag(tagname, root_options) { content }
       end
     end
 
