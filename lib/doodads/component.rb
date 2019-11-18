@@ -8,7 +8,7 @@ module Doodads
     include Doodads::MergeOptions
     include Doodads::Registry
 
-    attr_reader :hierarchy, :link_class_name, :name, :parent
+    attr_reader :hierarchy, :link_class_name, :modifiers, :name, :parent
 
     def self.css_strategy(strategy)
       @css_strategies ||= {}.with_indifferent_access
