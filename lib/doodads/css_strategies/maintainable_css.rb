@@ -15,6 +15,15 @@ module Doodads
         class_name = clean(name)
         return class_name unless parent.present?
 
+        # Determine if we have a singular component nested in a plural container, e.g. ".menu > .menu-items > .menu-item"
+        # Per the Maintainable CSS handbook, rather than "menu-items-item", this should be "menu-item"
+        singular = class_name.singularize
+        plural = /#{class_name.pluralize}$/
+        if class_name == singular && parent.class_name.match?(plural)
+          return clean(parent.class_name.sub(plural, singular))
+        end
+
+        parent_class_name = clean(parent.class_name)
         "#{parent.class_name}#{SEPARATOR}#{name}"
       end
 
