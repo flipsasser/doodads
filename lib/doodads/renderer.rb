@@ -78,12 +78,12 @@ module Doodads
       has_nested_link = has_link && component.link_nested?
       path_is_active = has_link && component_path_is_active?(url, options)
       if has_nested_link
-        link_options = component.link_options(path_is_active, options.merge(class: component.link_class_name))
+        link_options = component.link_options(path_is_active)
         content = link_to(url, link_options) { content }
       end
 
       # Combine the remaining options and context into a set of options for the root container
-      tagname = options.delete(:tagname) { root_container.tagname }
+      tagname = options.delete(:tagname) || root_container.tagname
       context_root = previous_component&.root
       nested_component_options = context_root.present? && component.root != context_root ? {class: context_root.child_class_name(component)} : {}
       root_options = options_for_component(
@@ -97,7 +97,7 @@ module Doodads
       # Unset the current rendering leaf before returning
       @current_component = previous_component
 
-      if component.link? && url.present? && !component.link_nested?
+      if has_link && !has_nested_link
         # Return a link if the component IS a link at its root
         link_to(url, component.link_options(path_is_active, root_options)) { content }
       else

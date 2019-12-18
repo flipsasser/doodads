@@ -88,6 +88,7 @@ module Doodads
     def link_options(is_active, options = {})
       return options if options.key?(Doodads.config.active_modifier)
 
+      options = deep_merge_options(options, class: link_class_name)
       options = deep_merge_options(options, class: active_class_name_for(options[:class] || @class_name)) if is_active
       options
     end
