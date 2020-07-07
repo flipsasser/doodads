@@ -1,6 +1,6 @@
 # Doodads
 
-<table style="border-collapse: collapse; width: 100%;">
+<table cellpadding="0" cellspacing="0" width="100%">
 	<tbody>
 		<tr>
 			<td rowspan="2" style="padding: 0;">
