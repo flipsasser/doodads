@@ -4,11 +4,7 @@
 	<tbody>
 		<tr>
 			<td rowspan="2" style="padding: 0;">
-
-				```
-				This is a code block
-				```
-
+				```This is a code block```
 			</td>
 			<td style="padding: 0;">
 				This is an ERB block
