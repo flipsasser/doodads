@@ -1,38 +1,83 @@
 # Doodads
 
-#### **⚠️THIS PROJECT IS A WORK IN PROGRESS!⚠️**
+<table style="border-collapse: collapse; width: 100%;">
+	<tbody>
+		<tr>
+			<td rowspan="2" style="padding: 0;">
 
-Meet Doodads! It's a simple way to define HTML components, allowing you to quickly and consistently buiild interfaces with your custom component library. It's real easy to use with its DSL:
+				```
+				This is a code block
+				```
+
+			</td>
+			<td style="padding: 0;">
+				This is an ERB block
+			</td>
+		</tr>
+		<tr>
+			<td style="padding: 0;">
+				I go under the other thing
+			</td>
+		</tr>
+	</tbody>
+</table>
+
+Meet Doodads! This is poorly-named but well-built Rails engine does exactly two things really well:
+
+1. **It makes defining custom view components simple.** Use the DSL to define view helpers that save you time and energy when rendering out common application components.
+2. **It makes adding screen reader accessibility as easy as possible.** Doodads supports quick shortcuts for `aria-` linkages, but it also allows you to link rendered components to one-another in order to make the web as easy to use for as many people as we possibly can.
+
+Meet Doodads! It's a Rails engine that helps define the HTML structure of your view components, allowing you to quickly and consistently build interfaces with a custom component library.
+
+It has a simple, declarative DSL you can use to define very complex structures and relationships. Components are defined inside of ActionView helper modules, which eases development by piggybacking on Rails' code-reloading:
 
 ```ruby
 module ApplicationHelper
-  extend Doodads::DSL
+  component :cards do
+    component :item, link: :optional do
+      modifier :flush
+      modifier :compact, "is-compact"
 
-  component :button, link: true do
-  	modifier :outline
+      component :action, link: :nested, tagname: :footer
+    end
   end
 end
 ```
 
-Will generate a helper method you can use in your views, like so:
+Will generate a `cards` helper method you can use in your views:
 
 ```html.erb
 <section class="container">
-  Ready to add something to a thing?
-  <%= button "Add a thing", new_thing_path, outline: true %>
+  <h2>Check out this list of things in a card format</h2>
+  <%= cards do %>
+    <%= item "This is a card with text content", flush: true %>
+    <%= item "This is a compact card with a URL", new_user_path, compact: true %>
+    <%= item "This is a card with a footer pointing somewhere" do %>
+      <%= action "View details", user_path(current_user) %>
+    <% end %>
+  <% end %>
 </section>
 ```
 
-This will generate HTML output like so:
+That helper method generates the requisite HTML with `class` and `href` correctly defined:
 
 ```html
 <section class="container">
-  Ready to add something to a thing?
-  <a class="button button--outline" href="/things/new">Add a thing</a>
+  <h2>Check out this list of things in a card format</h2>
+  <div class="cards">
+    <div class="cards-item card-item--flush">This is a card with text content</div>
+    <a class="cards-item card-item--is-compact" href="/users/new">This is a compact card with a URL</a>
+    <div class="cards-item">
+      This is a card with a footer pointing somewhere
+      <footer class="cards-item-action cards-item-action--has-link">
+        <a class="cards-item-action-link" href="/users/1">View details</a>
+      </footer>
+    </div>
+  </div>
 </section>
 ```
 
-## Custom HTML Structure
+## Customizing the HTML output
 
 When you define a component, you can override tagname (defaults to `div` unless the `link` option is set to `true` - in which case it uses an `a` tag), class name (defaults to the [Maintainable CSS](https://maintainablecss.com/chapters/introduction/) apporach but custom strategies can be added), nest content in a hierarchy of elements, and add context-specific sub-components.
 

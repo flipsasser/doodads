@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Doodads
   module MergeOptions
     def deep_merge_options(*option_sets)
@@ -15,6 +17,8 @@ module Doodads
     def merge_option_values(option, value, options = {})
       case options[option]
       when String
+      when Symbol
+        # Strings and symbols are combined into strings
         options[option] = [options[option], value].join(" ")
       when Array
         options[option].push(*value)

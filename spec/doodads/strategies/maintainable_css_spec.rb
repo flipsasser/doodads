@@ -1,8 +1,10 @@
-require "doodads/component"
-require "doodads/css_strategies"
+# frozen_string_literal: true
 
-RSpec.describe Doodads::CSSStrategies do
-  let(:strategy) { Doodads::CSSStrategies.get(:maintainable_css) }
+require "doodads/component"
+require "doodads/strategies"
+
+RSpec.describe Doodads::Strategies do
+  let(:strategy) { described_class.get(:maintainable_css) }
   let(:parent) { Doodads::Component.new(:parent) }
   let(:items) { Doodads::Component.new(:items) }
 

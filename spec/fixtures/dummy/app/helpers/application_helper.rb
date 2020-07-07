@@ -1,5 +1,4 @@
 # frozen_string_literal: true
 
-module Doodads
-  VERSION = "0.2.0"
+module ApplicationHelper
 end

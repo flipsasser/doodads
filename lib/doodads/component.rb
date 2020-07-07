@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 require "doodads/container"
-require "doodads/css_strategies"
+require "doodads/strategies"
 require "doodads/merge_options"
 require "doodads/registry"
 
@@ -10,17 +12,17 @@ module Doodads
 
     attr_reader :hierarchy, :link_class_name, :modifiers, :name, :parent
 
-    def self.css_strategy(strategy)
-      @css_strategies ||= {}.with_indifferent_access
-      @css_strategies[strategy] ||= Doodads::CSSStrategies.get(strategy)
+    def self.strategy(strategy)
+      @strategies ||= {}.with_indifferent_access
+      @strategies[strategy] ||= Doodads::Strategies.get(strategy)
     end
 
     def initialize(name, options = {}, &block)
       @name = name
-      @css_strategy = options.delete(:css_strategy) || Doodads.config.css_strategy
+      @strategy = options.delete(:strategy) || Doodads.config.strategy
 
       @parent = options.delete(:parent)
-      @class_name = css_strategy.class_name_for(options[:class] || name, parent: @parent)
+      @class_name = strategy.class_name_for(options[:class] || name, parent: @parent)
 
       # Link options
       @link = options.delete(:link)
@@ -51,12 +53,12 @@ module Doodads
       @modifiers[name] = value
     end
 
-    def active_class_name_for(class_name = @class_name)
-      css_strategy.modifier_name_for(class_name, modifier: Doodads.config.active_modifier)
+    def child_class_name(*children)
+      strategy.child_name_for(self, *children)
     end
 
     def class_name(options = {})
-      return @class_name unless @modifiers.present?
+      return @class_name if @modifiers.blank?
 
       # Step through options and pull out any modifiers that we'll need to add
       # to our base class name
@@ -64,33 +66,19 @@ module Doodads
       options.each do |option, value|
         if @modifiers.key?(option)
           options.delete(option)
-          class_names.push(css_strategy.modifier_name_for(@class_name, modifier: @modifiers[option])) if value
+          class_names.push(strategy.modifier_name_for(@class_name, modifier: @modifiers[option])) if value
         end
       end
 
       class_names.join(" ")
     end
 
-    def child_class_name(*children)
-      css_strategy.child_name_for(self, *children)
-    end
-
     def find_component(name)
-      component = registry[name]
-      component = parent.find_component(name) if component.nil? && parent.present?
-      component
+      registry[name] || parent&.find_component(name)
     end
 
     def link?
       !!@link
-    end
-
-    def link_options(is_active, options = {})
-      return options if options.key?(Doodads.config.active_modifier)
-
-      options = deep_merge_options(options, class: link_class_name)
-      options = deep_merge_options(options, class: active_class_name_for(options[:class] || @class_name)) if is_active
-      options
     end
 
     def link_nested?
@@ -101,6 +89,14 @@ module Doodads
       !link? || @link_optional || @link == :optional
     end
 
+    def link_options(is_active, options = {})
+      return options if options.key?(Doodads.config.active_modifier)
+
+      options = deep_merge_options(options, class: link_class_name)
+      options = deep_merge_options(options, class: active_class_name_for(options[:class] || @class_name)) if is_active
+      options
+    end
+
     def root
       root = self
       root = root.parent while root&.parent.present?
@@ -109,8 +105,12 @@ module Doodads
 
     private
 
-    def css_strategy
-      self.class.css_strategy(@css_strategy)
+    def active_class_name_for(class_name = @class_name)
+      strategy.modifier_name_for(class_name, modifier: Doodads.config.active_modifier)
+    end
+
+    def strategy
+      self.class.strategy(@strategy)
     end
   end
 end

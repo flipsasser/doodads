@@ -1,5 +1,7 @@
+# frozen_string_literal: true
+
 module Doodads
-  module CSSStrategies
+  module Strategies
     # Base CSS strategy: provides required methods that must be overridden by subclasses
     class Base
       def child_name_for(*chain)

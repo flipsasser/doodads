@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Doodads
   class Container
     attr_reader :options, :tagname

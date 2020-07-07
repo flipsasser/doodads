@@ -1,11 +1,22 @@
+# frozen_string_literal: true
+
 require "bundler/setup"
+
+ENV["RAILS_ENV"] ||= "test"
+require File.expand_path("./fixtures/dummy/config/environment", __dir__)
+require "rspec/rails"
+Dir[Rails.root.join("spec", "support", "**", "*.rb")].sort.each { |f| require f }
+
+require "simplecov"
+SimpleCov.start
+
 require "doodads"
+require "doodads/railtie"
 
 RSpec.configure do |config|
-  # Enable flags like --only-failures and --next-failure
+  config.filter_rails_from_backtrace!
+  config.use_active_record = false
   config.example_status_persistence_file_path = ".rspec_status"
-
-  # Disable RSpec exposing methods globally on `Module` and `main`
   config.disable_monkey_patching!
 
   config.expect_with :rspec do |c|
