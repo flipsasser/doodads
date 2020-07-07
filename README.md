@@ -1,10 +1,23 @@
 # Doodads
 
+Custom HTML component helpers with ARIA accessibility baked in.
+
 <table cellpadding="0" cellspacing="0" width="100%">
 	<tbody>
 		<tr>
 			<td rowspan="2" style="padding: 0;">
-				```This is a code block```
+				<pre><code>
+module ApplicationHelper
+  component :cards do
+    component :item, link: :optional do
+      modifier :flush
+      modifier :compact, "is-compact"
+
+      component :action, link: :nested, tagname: :footer
+    end
+  end
+end
+				</code></pre>
 			</td>
 			<td style="padding: 0;">
 				This is an ERB block
