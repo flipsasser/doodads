@@ -12,10 +12,10 @@ module Doodads
         end
 
         message = %(Could not find component "#{name}")
-        message << %(, even as a subcomponent of "#{context_chain.join(" > ")}") if context_chain.any?
-        message << ". Available root components are #{component_list(Doodads)}"
-        message << ", and available context-specific components are #{component_list(context)}" if context.present?
-        message << "."
+        message = %(#{message}, even as a subcomponent of "#{context_chain.join(" > ")}") if context_chain.any?
+        message = "#{message}. Available root components are #{component_list(Doodads::Component)}"
+        message = "#{message}, and available context-specific components are #{component_list(context)}" if context.present?
+        message = "#{message}."
 
         super message
       end

@@ -6,10 +6,11 @@ module Doodads
   module Strategies
     class MaintainableCSS < Base
       SEPARATOR = "-"
-      MODIFIER_SEPARATOR = "--"
+      FLAG_SEPARATOR = "--"
 
+      # Returns a class name for a component chain, e.g. [`nav`, `list`, `item`] becomes "nav-list-item"
       def child_name_for(*chain)
-        class_names = chain.inject([]) { |class_names, child| class_names + [clean(object_to_class_name(child))] }
+        class_names = chain.compact.inject([]) { |class_names, child| class_names + [clean(object_to_class_name(child))] }
         class_names.join(SEPARATOR)
       end
 
@@ -17,7 +18,7 @@ module Doodads
         class_name = clean(name)
         return class_name if parent.blank?
 
-        # Determine if we have a singular component nested in a plural container, e.g. ".menu > .menu-items > .menu-item"
+        # Determine if we have a singular component nested in a plural wrapper, e.g. ".menu > .menu-items > .menu-item"
         # Per the Maintainable CSS handbook, rather than "menu-items-item", this should be "menu-item"
         singular = class_name.singularize
         plural = /#{class_name.pluralize}$/
@@ -26,11 +27,11 @@ module Doodads
         end
 
         parent_class_name = clean(parent.class_name)
-        "#{parent.class_name}#{SEPARATOR}#{name}"
+        "#{parent_class_name}#{SEPARATOR}#{name}"
       end
 
-      def modifier_name_for(name, modifier:)
-        "#{class_name_for(name)}#{MODIFIER_SEPARATOR}#{clean(modifier)}"
+      def flag_name_for(name, flag:)
+        "#{class_name_for(name)}#{FLAG_SEPARATOR}#{clean(flag)}"
       end
 
       private

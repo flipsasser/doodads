@@ -6,18 +6,16 @@ Custom HTML component helpers with ARIA accessibility baked in.
 	<tbody>
 		<tr>
 			<td rowspan="2" style="padding: 0;">
-				<pre><code>
-module ApplicationHelper
+				<pre><code>module ApplicationHelper
   component :cards do
     component :item, link: :optional do
-      modifier :flush
-      modifier :compact, "is-compact"
+      flag :flush
+      flag :compact, "is-compact"
 
       component :action, link: :nested, tagname: :footer
     end
   end
-end
-				</code></pre>
+end</code></pre>
 			</td>
 			<td style="padding: 0;">
 				This is an ERB block
@@ -36,22 +34,30 @@ Meet Doodads! This is poorly-named but well-built Rails engine does exactly two 
 1. **It makes defining custom view components simple.** Use the DSL to define view helpers that save you time and energy when rendering out common application components.
 2. **It makes adding screen reader accessibility as easy as possible.** Doodads supports quick shortcuts for `aria-` linkages, but it also allows you to link rendered components to one-another in order to make the web as easy to use for as many people as we possibly can.
 
-Meet Doodads! It's a Rails engine that helps define the HTML structure of your view components, allowing you to quickly and consistently build interfaces with a custom component library.
+## Defining components (aka the DSL)
 
-It has a simple, declarative DSL you can use to define very complex structures and relationships. Components are defined inside of ActionView helper modules, which eases development by piggybacking on Rails' code-reloading:
+Doodads has a simple, declarative DSL you can use to define very complex structures and relationships. Components are defined inside of ActionView helper modules, which eases development by piggybacking on Rails' code-reloading:
 
 ```ruby
 module ApplicationHelper
   component :cards do
     component :item, link: :optional do
-      modifier :flush
-      modifier :compact, "is-compact"
+      flag :flush
+      flag :compact, "is-compact"
 
       component :action, link: :nested, tagname: :footer
     end
   end
 end
 ```
+
+### Component options
+
+### Wrapping component content
+
+#### IMPORTANT! Primary content vs. subcomponents
+
+## Rendering components
 
 Will generate a `cards` helper method you can use in your views:
 
@@ -86,6 +92,12 @@ That helper method generates the requisite HTML with `class` and `href` correctl
 </section>
 ```
 
+## Accessibility shortcuts
+
+## Linking accessible components
+
+
+
 ## Customizing the HTML output
 
 When you define a component, you can override tagname (defaults to `div` unless the `link` option is set to `true` - in which case it uses an `a` tag), class name (defaults to the [Maintainable CSS](https://maintainablecss.com/chapters/introduction/) apporach but custom strategies can be added), nest content in a hierarchy of elements, and add context-specific sub-components.
@@ -97,9 +109,9 @@ module ApplicationHelper
   extend Doodads::DSL
 
   component :nav, class: "nav-container", tagname: :nav do
-	container :ul do
-	  component :item, tagname: :li
-	end
+	  wrapper :ul do
+	    component :item, tagname: :li
+	  end
   end
 end
 ```
@@ -162,29 +174,29 @@ You would have the following markup:
 </ul>
 ```
 
-## Modifier Sets
+## Flag Sets
 
-Sometimes you reuse modifiers, like the common Bootstrap flags "success", "info", "warning", "error", etc. You can easily define common modifiers and then apply them to components using the `modifiers` method:
+Sometimes you reuse flags, like the common Bootstrap statuses "success", "info", "warning", "error", etc. You can easily define common flags and then apply them to components using the `flag_set` and `use_flags` methods:
 
 ```ruby
 module ApplicationHelper
   extend Doodads::DSL
 
-  modifier_set :statuses, %w[success info warning error etc etc etc]
+  flag_set :statuses, %w[success info warning error etc etc etc]
 
   component :badge do
-    modifiers :statuses
+    use_flags :statuses
   end
 end
 ```
 
-You can also provide a hash to a modifier set instead of an array, which allows you to provide aliases for modifiers. This allows you to write your views with domain-model context that translates to more generic HTML classes:
+You can also provide a hash to a flag set instead of an array, which allows you to provide aliases for flags. This allows you to write your views with domain-model context that translates to more generic HTML classes:
 
 ```
 module ApplicationHelper
   extend Doodads::DSL
 
-  modifier_set :opportunity_statuses, {
+  flag_set :opportunity_statuses, {
     draft: :neutral,
     open: :info,
     closed_won: :success,
@@ -192,7 +204,7 @@ module ApplicationHelper
   }
 
   component :badge do
-    modifiers :opportunity_statuses
+    use_flags :opportunity_statuses
   end
 end
 ```

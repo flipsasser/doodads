@@ -12,8 +12,8 @@ module Doodads
         raise NotImplementedError.new("#{self.class}#class_name_for(name, parent: nil) is not implemented")
       end
 
-      def modifier_name_for(name, modifier:)
-        raise NotImplementedError.new("#{self.class}#modifier_name_for(name, modifier:) is not implemented")
+      def flag_name_for(name, flag:)
+        raise NotImplementedError.new("#{self.class}#flag_name_for(name, flag:) is not implemented")
       end
 
       private

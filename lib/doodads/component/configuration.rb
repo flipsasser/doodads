@@ -1,0 +1,152 @@
+# frozen_string_literal: true
+
+module Doodads
+  class Component
+    # This module holds all the configuration metadata for Component classes. These methods are
+    # referenced by the DSL, or can be used in subclass configuration, e.g.
+    # class ButtonComponent < Doodads::Component
+    #   strategy :bootstrap
+    # end
+    module Configuration
+      def self.extended(base)
+        base.class_eval do
+          add_option :as, default: -> { name.split("::").last.gsub(/Component$/, "").underscore }
+          alias_method :name, :as
+
+          # Add some basic options
+          add_option :class_name, default: -> { as } do |new_class_name|
+            strategy.class_name_for(new_class_name.to_s, parent: parent)
+          end
+          add_option :default_options, default: {}
+          add_option :parent
+          add_option :tagname, default: :div
+
+          # Add link options - they're more complex
+          add_option :link, default: false do |new_link|
+            new_link = new_link.respond_to?(:to_sym) ? new_link.to_sym : new_link
+            flags[:has_link] = link_flag if new_link == :nested
+            new_link
+          end
+
+          add_option :link_class, default: -> { Doodads.config.link_class }
+          add_option :link_flag, default: -> { Doodads.config.link_flag }
+          add_option :link_optional
+
+          # Strategy has to massage received values a little bit
+          add_option(:strategy, default: -> { Doodads::Strategies.get(Doodads.config.strategy) }) do |new_strategy|
+            if new_strategy.is_a?(Class)
+              new_strategy.new
+            elsif new_strategy.is_a?(Doodads::Strategies::Base)
+              new_strategy
+            else
+              Doodads::Strategies.get(new_strategy)
+            end
+          end
+        end
+      end
+
+      def add_option(name, default: nil, &setter)
+        variable = "@#{name}".to_sym
+
+        # Add a class method that accepts a single value as an override, or returns the value if called without any args
+        define_singleton_method(name) do |*args|
+          if args.none?
+            ## Called as an accessor
+            # Return the variable if it's set
+            return instance_variable_get(variable) if instance_variables.include?(variable)
+
+            # Set the default value, including using any custom setter we received
+            default_value = default.respond_to?(:call) ? instance_exec(&default) : default
+            default_value = instance_exec(default_value, &setter) if block_given?
+            return instance_variable_set(variable, default_value)
+          end
+
+          # Called as a setter - throw an error if there are too many arguments
+          raise ArgumentError.new("wrong number of arguments (given #{args.length}, expected 0..1)") if args.many?
+
+          value = args.first
+          value = default.respond_to?(:call) ? instance_exec(&default) : default if value.nil?
+          value = instance_exec(value, &setter) if block_given?
+          instance_variable_set(variable, value)
+        end
+
+        # Add an instance method that simply provides a reader for the class method
+        unless instance_methods.include?(name)
+          class_eval <<-EOC, __FILE__, __LINE__ + 1
+          def #{name}
+            self.class.#{name}
+          end
+          EOC
+        end
+      end
+
+      def add_wrapper(tagname, options = {})
+        if @reset_wrappers
+          wrappers.clear
+          @reset_wrappers = false
+        end
+
+        options = options.with_indifferent_access
+
+        wrapper_class_name = options.delete(:class)
+        options[:class] = strategy.child_name_for(class_name, wrapper_class_name) if wrapper_class_name.present?
+
+        wrappers.push(Wrapper.new(tagname, options))
+      end
+
+      def configure(name, options = {})
+        options = options.with_indifferent_access
+
+        ## Configure some defaults from the options
+        @reset_wrappers = true # We want to reset the wrapper hierarchy in case a block will be adding wrappers
+
+        # Some basic configuration stuff
+        as name
+        parent options.delete(:parent)
+        class_name options.delete(:class)
+        strategy options.delete(:strategy)
+        tagname options.delete(:tagname) { :div }
+
+        # Links
+        link options.delete(:link)
+        link_class options.delete(:link_class)
+        link_flag options.delete(:link_flag)
+        link_optional options.delete(:link_optional)
+
+        # Whatever else was left goes into default options when we render an instance
+        default_options options
+
+        # Finally, add a default wrapper for the root component
+        add_wrapper(tagname, options)
+      end
+
+      def create(name, options = {})
+        Class.new(Doodads::Component).tap do |component_class|
+          component_class.configure(name, options)
+        end
+      end
+
+      def flags
+        @flags ||= {}.with_indifferent_access
+      end
+
+      # Auto-register subclasses in the registry
+      def inherited(subclass)
+        unless subclass.module_parents.include?(Doodads::Components)
+          # Directly subclassed e.g. in `app/components` or `app/doodads`; go ahead and add to the registry directly
+          TracePoint.trace(:end) do |trace|
+            if subclass == trace.self
+              Doodads::Components.register(subclass.as, subclass)
+              trace.disable
+            end
+          end
+
+        end
+      end
+
+      def wrappers
+        @wrappers ||= []
+      end
+    end
+  end
+end

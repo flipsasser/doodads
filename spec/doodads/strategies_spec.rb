@@ -8,6 +8,12 @@ RSpec.describe Doodads::Strategies do
   end
 
   it "throws an error when it cannot retrieve a CSS strategy" do
-    expect(-> { described_class.get(:bootstrap) }).to raise_error(Doodads::Strategies::StrategyMissingError)
+    expect(-> { described_class.get(:bootstrap) }).to raise_error(Doodads::Errors::StrategyMissingError)
+  end
+
+  it "registers a strategy manually" do
+    stub_const("Thing", Class.new)
+    described_class.register(:fake, Thing)
+    expect(described_class.get("fake")).to be_instance_of(Thing)
   end
 end

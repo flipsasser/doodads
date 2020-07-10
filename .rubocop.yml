@@ -55,9 +55,9 @@ RSpec/ExampleLength:
   Max: 15
 
 RSpec/MultipleExpectations:
-  Exclude:
-    - spec/controllers/**/*
-  Max: 2
+  # Exclude:
+  #   - spec/controllers/**/*
+  Max: 3
 
 RSpec/NestedGroups:
   Max: 4

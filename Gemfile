@@ -9,7 +9,7 @@ group :test do
   gem "guard", require: false
   gem "guard-rspec", require: false
   gem "guard-rubocop", require: false
-  gem "pry-rails"
+  gem "pry"
   gem "rails", require: false
   gem "rspec-rails", require: false
   gem "rubocop", require: false
