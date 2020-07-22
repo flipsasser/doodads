@@ -4,14 +4,13 @@
     <title>Dummy</title>
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
-
     <%= stylesheet_link_tag    'application', media: 'all' %>
   </head>
-
   <body>
-    <%= nav do |nav| %>
-      <% nav.item "Home", root_path %>
-      <% nav.item "Home", root_path %>
+    <%= nav do %>
+      <%= logo src: "/logo.svg" %>
+      <%= item "Home", root_path %>
+      <%= item "Test", test_path %>
     <% end %>
     <%= yield %>
   </body>

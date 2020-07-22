@@ -29,8 +29,11 @@ module Doodads
         # button("text", "url") #=> text
         # button("url") { "text" } #=> "text"
         # button("title", "url") { "text" } #=> "titletext"
-        content = args.shift || "".html_safe
-        content << view_context.capture { view_context.instance_eval(&block) } if block_given?
+        content = (args.shift || "").html_safe
+        if block_given?
+          args = block.arity == 1 ? [self] : []
+          content << view_context.capture { view_context.instance_exec(*args, &block) }
+        end
 
         ## Step 3: Wrap the content in a link (if needed)
         has_link = link? && url.present?

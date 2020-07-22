@@ -133,6 +133,7 @@ module Doodads
 
       # Auto-register subclasses in the registry
       def inherited(subclass)
+        # :nocov:
         unless subclass.module_parents.include?(Doodads::Components)
           # Directly subclassed e.g. in `app/components` or `app/doodads`; go ahead and add to the registry directly
           TracePoint.trace(:end) do |trace|
@@ -141,8 +142,8 @@ module Doodads
               trace.disable
             end
           end
-
         end
+        # :nocov:
       end
 
       def wrappers

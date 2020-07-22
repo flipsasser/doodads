@@ -25,7 +25,7 @@ RSpec.configure do |config|
   # config.filter_run focus: true
   config.use_active_record = false
 
-  config.after do |example|
+  config.before do |example|
     unless example.metadata[:clear] == false
       Doodads::Components.registry.clear
       Doodads::Components.constants.each { |const| Doodads::Components.send(:remove_const, const) }

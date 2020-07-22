@@ -15,10 +15,6 @@ module Doodads
         self.class.link_nested?
       end
 
-      def link_optional?
-        self.class.link_optional?
-      end
-
       def link_required?
         self.class.link_required?
       end

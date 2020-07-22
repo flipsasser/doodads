@@ -7,6 +7,17 @@ module BaseHelper
 end
 
 RSpec.describe Doodads::DSL do
+  describe ".included" do
+    it "warns people not to include the DSL" do
+      allow(Rails.logger).to receive(:warn).with(an_instance_of(String))
+      module BadInclude
+        include Doodads::DSL
+      end
+
+      expect(Rails.logger).to have_received(:warn).with("It looks like you mixed the Doodads::DSL into BadInclude using `include`. Use `extend` instead to generate a DSL for quickly defining Component classes without complex logic. Please double-check the README to ensure you want to mix it in this way!")
+    end
+  end
+
   describe "#component" do
     describe "when called at the top level" do
       it "defines top-level components" do

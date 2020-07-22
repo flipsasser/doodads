@@ -6,10 +6,12 @@ require "doodads/helper"
 module Doodads
   module DSL
     def self.included(base)
-      message = "It looks like you mixed the Doodads::DSL into #{base} using `include`."
-      message = "#{message} Use `extend` instead to generate a DSL for quickly defining Component classes without complex logic."
-      message = "#{message} Please double-check the README to ensure you want to mix it in this way!"
-      Rails.logger.warn message
+      unless Doodads.config.suppress_include_dsl_warning
+        message = "It looks like you mixed the Doodads::DSL into #{base} using `include`."
+        message = "#{message} Use `extend` instead to generate a DSL for quickly defining Component classes without complex logic."
+        message = "#{message} Please double-check the README to ensure you want to mix it in this way!"
+        Rails.logger.warn message
+      end
     end
 
     def component(name, options = {}, &block)
