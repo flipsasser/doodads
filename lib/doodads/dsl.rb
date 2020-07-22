@@ -48,6 +48,7 @@ module Doodads
       options = Hash[*options.map { |option| [option, option] }.flatten] if options.is_a?(Array)
       Doodads::Flags[name] = options.with_indifferent_access
     end
+    alias flags flag_set
 
     def use_flags(name)
       require_current_component!(:use_flags, name)

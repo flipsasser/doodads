@@ -116,14 +116,21 @@ RSpec.describe Doodads::DSL do
       end
     end
 
-    it "accepts a tagname override" do
-      button = BaseHelper.component :button, tagname: :div
-      expect(button.tagname).to eq(:div)
+    describe "when configuring the tagname" do
+      it "accepts a tagname override" do
+        button = BaseHelper.component :sparkle, tagname: :ol
+        expect(button.tagname).to eq(:ol)
+      end
+
+      it "infers tagname when the component name is a valid HTML element" do
+        nav = BaseHelper.component :nav
+        expect(nav.tagname).to eq(:nav)
+      end
     end
 
     it "re-defines components with new options" do
       button = BaseHelper.component :button
-      expect(button.tagname).to eq(:div)
+      expect(button.tagname).to eq(:button)
 
       expect {
         button_redefinition = BaseHelper.component :button, tagname: :test

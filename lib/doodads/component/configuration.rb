@@ -95,6 +95,7 @@ module Doodads
       end
 
       def configure(name, options = {})
+        name = name.to_s.downcase.to_sym
         options = options.with_indifferent_access
 
         ## Configure some defaults from the options
@@ -105,7 +106,7 @@ module Doodads
         parent options.delete(:parent)
         class_name options.delete(:class)
         strategy options.delete(:strategy)
-        tagname options.delete(:tagname) { :div }
+        tagname options.delete(:tagname) { VALID_TAGS.include?(name) ? name : :div }
 
         # Links
         link options.delete(:link)
@@ -147,6 +148,15 @@ module Doodads
       def wrappers
         @wrappers ||= []
       end
+
+      VALID_TAGS = %i[
+        abbr address area article aside audio bdi bdo blockquote button canvas caption cite code
+        col colgroup data datalist dd del details dfn dialog dl dt embed fieldset figcaption
+        figure footer form h1 h2 h3 h4 h5 h6 header hgroup hr iframe ins kbd label legend main
+        map mark menu meter nav noscript object optgroup option output p param picture pre
+        progress rb rp rt rtc ruby samp section select slot small source sub summary sup table
+        tbody td template textarea tfoot th thead time tr track var video wbr
+      ].freeze
     end
   end
 end
