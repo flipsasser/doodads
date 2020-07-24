@@ -174,18 +174,18 @@ RSpec.describe Doodads::DSL do
     end
   end
 
-  describe "#flag_set" do
+  describe "#flags" do
     it "throws an error inside of a component" do
       expect {
         BaseHelper.component(:button) {
-          flag_set :statuses, %i[informational danger success warning]
+          flags :statuses, %i[informational danger success warning]
         }
       }.to raise_error(Doodads::Errors::NoComponentRequiredError)
     end
 
     describe "with an array" do
       it "converts the flags to a hash" do
-        BaseHelper.flag_set :status_array, %i[informational danger success warning]
+        BaseHelper.flags :status_array, %i[informational danger success warning]
         expect(Doodads::Flags[:status_array]).to eq({
           informational: :informational,
           danger: :danger,
@@ -197,7 +197,7 @@ RSpec.describe Doodads::DSL do
 
     describe "with a hash" do
       it "uses the hash values" do
-        BaseHelper.flag_set :status_hash,
+        BaseHelper.flags :status_hash,
           pending: :info,
           failed: :danger,
           succeeded: :success,

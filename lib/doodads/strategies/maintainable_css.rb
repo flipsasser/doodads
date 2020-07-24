@@ -16,7 +16,7 @@ module Doodads
 
       def class_name_for(name, parent: nil)
         class_name = clean(name)
-        return class_name if parent.blank?
+        return class_name unless parent&.respond_to?(:class_name)
 
         # Determine if we have a singular component nested in a plural wrapper, e.g. ".menu > .menu-items > .menu-item"
         # Per the Maintainable CSS handbook, rather than "menu-items-item", this should be "menu-item"

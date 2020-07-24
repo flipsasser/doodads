@@ -7,6 +7,27 @@ module Doodads
         self.class.registry[name] || parent&.find_component(name)
       end
 
+      def to_s
+        render(@tagname, @content, @url, @options)
+      end
+
+      private
+
+      def build_link_options(is_active, options = {})
+        if options.delete(:active) { is_active }
+          return deep_merge_options(
+            options,
+            class: strategy.flag_name_for(options[:class] || class_name, flag: Doodads.config.active_flag),
+          )
+        end
+
+        options
+      end
+
+      def flags
+        self.class.flags
+      end
+
       def normalize_args(*args, &block)
         options = args.extract_options!
         options = options.with_indifferent_access
@@ -77,31 +98,22 @@ module Doodads
           root_options[:class] = class_names.reject(&:blank?).join(" ")
         end
 
-        # Okay! Return the inferred HTML tagname, the normalized HTML string, the url if a link is
-        # needed, and the merged options hash for rendering the root component
-        [
-          has_link && !has_nested_link ? :a : tagname,
-          content,
-          has_nested_link ? nil : url,
-          root_options,
-        ]
-      end
-
-      # Used to normalize the arguments into clear content blocks, and then pass them to the render method
-      def normalize_args_and_render(*args, &block)
-        tagname, content, url, options = normalize_args(*args, &block)
-        primary_content = render(tagname, content, url, options)
-
-        # TODO: Someday, let's extract sibling component content and join that here using view_context.safe_join
-        primary_content
+        # Okay! Stash the inferred HTML tagname, the normalized HTML string, the url if a link is
+        # needed, and the merged options hash for rendering the root component. `to_s` will handle
+        # the rest.
+        @tagname = has_link && !has_nested_link ? :a : tagname
+        @content = content
+        @url = has_nested_link ? nil : url
+        @options = root_options
       end
 
       def render(tagname, content, url = nil, options = {})
+        # TODO: Someday, let's extract sibling component content and join that here using view_context.safe_join
         # Wrap the content in the component's wrapper hierarchy (excepting the root wrapper)
         content = wrap_content(content)
 
-        # Unset the current rendering leaf before returning
-        # @current_component = previous_component
+        # TODO: Extract primary and secondary content
+        # view_context.safe_join([primary_content, sub_components])
 
         if url.present?
           # Return a link if the component IS a link at its root
@@ -110,8 +122,6 @@ module Doodads
           # Return a non-link wrapper wrapping the content
           view_context.content_tag(tagname, content, options)
         end
-
-        # view_context.safe_join([primary_content, sub_components])
       end
 
       def root
@@ -145,23 +155,6 @@ module Doodads
 
       def wrappers
         self.class.wrappers
-      end
-
-      private
-
-      def build_link_options(is_active, options = {})
-        if options.delete(:active) { is_active }
-          return deep_merge_options(
-            options,
-            class: strategy.flag_name_for(options[:class] || class_name, flag: Doodads.config.active_flag),
-          )
-        end
-
-        options
-      end
-
-      def flags
-        self.class.flags
       end
     end
   end

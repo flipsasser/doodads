@@ -1,31 +1,30 @@
 # frozen_string_literal: true
 
+require "doodads/dsl"
+
 # The helper that gets mixed in to your ApplicationHelper (if it hasn't been already). We use this
 # to render components inside of the Rails view context. Because it gets mixed directly in to a
 # helper, outside of an engine namespace, it is designed to have as little surface area as
-# possible. It adds one method, `render_component_named`, which is called by metaprogrammed-methods
-# added via the DSL module.
+# possible. It adds one instance method, `render_doodad`, which is called by metaprogrammed-methods
+# added via the DSL module. The DSL module adds a flag registry, a component registry, and a few
+# class-level DSL methods for defining those items - namely `flags` and `component`. Everything
+# else happens within the context of a component, which has an additional DSL that processes stuff
+# like wrappers, subcomponents, and the like.
 module Doodads
   module Helper
     def self.included(base)
       base.extend Doodads::DSL
     end
 
-    def render_component_named(name, *args, &block)
-      component_class = @_current_doodad_component&.find_component(name) || Doodads::Components.registry[name]
-      raise Doodads::Errors::ComponentMissingError.new(name, @_current_doodad_component&.class) if component_class.blank?
+    def render_doodad(name, *args, &block)
+      component_class = self.class.find_component(name)
+      raise Doodads::Errors::ComponentMissingError.new(name, self.class) if component_class.blank?
 
-      # Mark this as the current leaf in our rendering tree
-      previous_component = @_current_doodad_component
-      @_current_doodad_component = component_class.new(self, parent: previous_component)
-
-      # Pass the current context in and render the component - this will call `render` on the
-      # component class, which can be overridden to receive normalized content and options
-      begin
-        @_current_doodad_component.normalize_args_and_render(*args, &block)
-      ensure
-        @_current_doodad_component = previous_component
-      end
+      # Pass the current context in - will either be the view itself (when calling a root-level
+      # component), which includes ApplicationHelper or whichever other helper Doodads was mixed
+      # into, OR it will be an instance of a component - in which case the view_context passed in
+      # previously via a root component will be handed down the chain.
+      component_class.new(self, *args, &block)
     end
   end
 end

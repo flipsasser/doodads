@@ -5,6 +5,8 @@ module Doodads
     module MergeOptions
       def deep_merge_options(*option_sets)
         options = (option_sets.shift || {})&.with_indifferent_access
+        return options unless option_sets.any?
+
         option_sets.each do |option_set|
           # Merge the option sets together
           option_set.each do |option, value|
