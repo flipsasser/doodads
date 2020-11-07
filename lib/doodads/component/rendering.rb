@@ -8,7 +8,7 @@ module Doodads
       end
 
       def to_s
-        render(@tagname, @content, @url, @options)
+        render(@tag, @content, @url, @options)
       end
 
       private
@@ -25,102 +25,23 @@ module Doodads
       end
 
       def flags
-        self.class.flags
+        self.class.component_flags
       end
 
-      def normalize_args(*args, &block)
-        options = args.extract_options!
-        options = options.with_indifferent_access
-        tagname = options.delete(:tagname) || self.tagname
-        option_sets = []
-        option_sets.push(default_options) if default_options.any?
-        option_sets.push(options) if options.any?
-
-        root_wrapper = wrappers.first
-        option_sets.unshift(root_wrapper.options) unless root_wrapper.options.empty?
-
-        ## Step 1: Find the URL
-        # button("text", "url") #=> url
-        # button("url") { "text" } #=> url
-        # button("text") #=> nil
-        url = link? && (args.many? || block_given?) && args.pop
-        raise Doodads::Errors::URLRequiredError.new(name) if url.blank? && link_required?
-
-        ## Step 2: Find the contents
-        # button("text", "url") #=> text
-        # button("url") { "text" } #=> "text"
-        # button("title", "url") { "text" } #=> "titletext"
-        content = (args.shift || "").html_safe
-        if block_given?
-          args = block.arity == 1 ? [self] : []
-          content << view_context.capture { view_context.instance_exec(*args, &block) }
-        end
-
-        ## Step 3: Wrap the content in a link (if needed)
-        has_link = link? && url.present?
-        has_nested_link = has_link && link_nested?
-        path_is_active = has_link && is_active_path?(url, options)
-        if has_nested_link
-          content = view_context.link_to(
-            content,
-            url,
-            build_link_options(
-              path_is_active,
-              class: strategy.child_name_for(self, link_class),
-            ),
-          )
-          option_sets.push({has_link: true})
-        elsif has_link
-          option_sets.push(build_link_options(path_is_active))
-        end
-
-        ## Step 4: Combine content with content derived from content flags (rather than class or attribute flags)
-        # TODO
-
-        ## Step 5: Combine all options for rendering. In order of precedence:
-        # Add context-specific options
-        unrelated_context = unrelated_parent&.root
-        option_sets.push({class: strategy.child_name_for(unrelated_context, self)}) if unrelated_context.present?
-
-        # Merge the options together
-        root_options = deep_merge_options({class: class_name}, *option_sets)
-
-        ## Step 6: Strip out flags and combine them into the class name
-        if flags.any? && root_options.any?
-          class_names = [root_options[:class]]
-          root_options.each do |option, value|
-            if flags.key?(option)
-              root_options.delete(option)
-              class_names.push(strategy.flag_name_for(options[:class] || class_name, flag: flags[option])) if value
-            end
-          end
-
-          root_options[:class] = class_names.reject(&:blank?).join(" ")
-        end
-
-        # Okay! Stash the inferred HTML tagname, the normalized HTML string, the url if a link is
-        # needed, and the merged options hash for rendering the root component. `to_s` will handle
-        # the rest.
-        @tagname = has_link && !has_nested_link ? :a : tagname
-        @content = content
-        @url = has_nested_link ? nil : url
-        @options = root_options
-      end
-
-      def render(tagname, content, url = nil, options = {})
-        # TODO: Someday, let's extract sibling component content and join that here using view_context.safe_join
+      def render(tag, content, url = nil, options = {})
+        # TODO: Someday, let's extract sibling component content and join that here using safe_join
         # Wrap the content in the component's wrapper hierarchy (excepting the root wrapper)
         content = wrap_content(content)
 
         # TODO: Extract primary and secondary content
-        # view_context.safe_join([primary_content, sub_components])
+        # safe_join([primary_content, sub_components])
 
         if url.present?
           # Return a link if the component IS a link at its root
-          view_context.link_to(content, url, options)
+          link_to(content, url, options)
         else
           # Return a non-link wrapper wrapping the content
-          view_context.content_tag(tagname, content, options)
+          content_tag(tag, content, options)
         end
       end
 
@@ -130,9 +51,9 @@ module Doodads
         root
       end
 
-      def unrelated_parent
-        parent&.class == self.class.parent ? nil : parent
-      end
+      # def unrelated_parent
+      #   parent&.class == self.class.parent ? nil : parent
+      # end
 
       def wrap_content(content)
         # Exclude the root wrapper
@@ -147,7 +68,7 @@ module Doodads
         # chain.
         while sub_wrappers.any?
           wrapper = sub_wrappers.pop
-          content = view_context.content_tag(wrapper.tagname, wrapper.options) { content }
+          content = content_tag(wrapper.tag, content, wrapper.options)
         end
 
         content

@@ -3,6 +3,9 @@
 module Doodads
   class Component
     module Linking
+      OPTIONAL_LINK = :optional
+      NESTED_LINK = :nested
+
       def self.included(base)
         base.extend ClassMethods
       end
@@ -25,11 +28,16 @@ module Doodads
         end
 
         def link_nested?
-          link == :nested
+          link_option?(NESTED_LINK)
+        end
+
+        def link_option?(option)
+          return false unless link.is_a?(Array)
+          link.include? option
         end
 
         def link_optional?
-          !link? || link_optional.present? || link == :optional
+          link_option?(OPTIONAL_LINK)
         end
 
         def link_required?

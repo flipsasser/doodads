@@ -9,19 +9,14 @@ class ViewContext
 
   attr_accessor :output_buffer
 
-  flag_set :statuses, %i[danger error informational success warning]
+  flags %i[danger error informational success warning]
 
-  component :link_button, class: "button", link: true do
-    use_flags :statuses
-  end
+  component :link_button, class: "button", link: true
+  component :submit_button, class: "button", link: :optional
 
-  component :submit_button, class: "button", link: :optional do
-    use_flags :statuses
-  end
-
-  component :nav, tagname: :nav do
+  component :nav, tag: :nav do
     wrapper :ul do
-      component :item, link: :nested, tagname: :li
+      component :item, link: :nested, tag: :li
     end
   end
 
@@ -44,17 +39,17 @@ RSpec.describe Doodads::Component, "#render", clear: false do
       end
 
       it "generates an <a> tag" do
-        expect(view.link_button("Button", "/")).to eq(%(<a class="button" href="/">Button</a>))
+        expect(view.link_button("Button", "/").to_s).to eq(%(<a class="button" href="/">Button</a>))
       end
     end
 
     describe "optional link components" do
       it "renders without a URL argument" do
-        expect(view.submit_button("Button")).to eq(%(<div class="button">Button</div>))
+        expect(view.submit_button("Button").to_s).to eq(%(<div class="button">Button</div>))
       end
 
       it "renders with a URL argument" do
-        expect(view.submit_button("Link Button", "#")).to eq(%(<a class="button" href="#">Link Button</a>))
+        expect(view.submit_button("Link Button", "#").to_s).to eq(%(<a class="button" href="#">Link Button</a>))
       end
     end
 
@@ -63,7 +58,7 @@ RSpec.describe Doodads::Component, "#render", clear: false do
         result = view.nav {
           item "Home", "/home"
         }
-        expect(result).to eq(%(<nav class="nav"><ul><li class="nav-item nav-item--has-link"><a class="nav-item-link" href="/home">Home</a></li></ul></nav>))
+        expect(result.to_s).to eq(%(<nav class="nav"><ul><li class="nav-item nav-item--has-link"><a class="nav-item-link" href="/home">Home</a></li></ul></nav>))
       end
     end
   end
@@ -73,7 +68,7 @@ RSpec.describe Doodads::Component, "#render", clear: false do
       result = view.cards {
         nav { item("Home", "/") }
       }
-      expect(result).to eq(%(<div class="cards"><nav class="nav cards-nav"><ul><li class="nav-item nav-item--has-link"><a class="nav-item-link" href="/">Home</a></li></ul></nav></div>))
+      expect(result.to_s).to eq(%(<div class="cards"><nav class="nav cards-nav"><ul><li class="nav-item nav-item--has-link"><a class="nav-item-link" href="/">Home</a></li></ul></nav></div>))
     end
   end
 end

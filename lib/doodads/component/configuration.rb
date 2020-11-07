@@ -3,14 +3,16 @@
 module Doodads
   class Component
     # This module holds all the configuration metadata for Component classes. These methods are
-    # referenced by the DSL, or can be used in subclass configuration, e.g.
+    # used by the DSL and can be used in subclass configurations, e.g.
     # class ButtonComponent < Doodads::Component
     #   strategy :bootstrap
     # end
     module Configuration
       def self.extended(base)
         base.class_eval do
-          add_option :as, default: -> { name.split("::").last.gsub(/Component$/, "").underscore }
+          add_option :as, default: -> { name.split("::").last.gsub(/Component$/, "") } do |new_as|
+            new_as.to_s.underscore.to_sym
+          end
           alias_method :name, :as
 
           # Add some basic options
@@ -19,18 +21,19 @@ module Doodads
           end
           add_option :default_options, default: {}
           add_option :parent
-          add_option :tagname, default: :div
+          add_option :tag, default: :div
 
           # Add link options - they're more complex
           add_option :link, default: false do |new_link|
-            new_link = new_link.respond_to?(:to_sym) ? new_link.to_sym : new_link
-            flags[:has_link] = link_flag if new_link == :nested
+            if new_link.is_a?(Array) || new_link.is_a?(String) || new_link.is_a?(Symbol)
+              new_link = Array(new_link).map(&:to_sym)
+              flag(:has_link) if new_link.include?(:nested)
+            end
             new_link
           end
 
           add_option :link_class, default: -> { Doodads.config.link_class }
           add_option :link_flag, default: -> { Doodads.config.link_flag }
-          add_option :link_optional
 
           # Strategy has to massage received values a little bit
           add_option(:strategy, default: -> { Doodads::Strategies.get(Doodads.config.strategy) }) do |new_strategy|
@@ -80,20 +83,6 @@ module Doodads
         end
       end
 
-      def add_wrapper(tagname, options = {})
-        if @reset_wrappers
-          wrappers.clear
-          @reset_wrappers = false
-        end
-
-        options = options.with_indifferent_access
-
-        wrapper_class_name = options.delete(:class)
-        options[:class] = strategy.child_name_for(class_name, wrapper_class_name) if wrapper_class_name.present?
-
-        wrappers.push(Wrapper.new(tagname, options))
-      end
-
       def configure(name, options = {})
         name = name.to_s.downcase.to_sym
         options = options.with_indifferent_access
@@ -106,19 +95,18 @@ module Doodads
         parent options.delete(:parent)
         class_name options.delete(:class)
         strategy options.delete(:strategy)
-        tagname options.delete(:tagname) { VALID_TAGS.include?(name) ? name : :div }
+        tag options.delete(:tag) { VALID_TAGS.include?(name) ? name : :div }
 
         # Links
         link options.delete(:link)
         link_class options.delete(:link_class)
         link_flag options.delete(:link_flag)
-        link_optional options.delete(:link_optional)
 
         # Whatever else was left goes into default options when we render an instance
         default_options options
 
         # Finally, add a default wrapper for the root component
-        add_wrapper(tagname, options)
+        wrapper(tag, options)
       end
 
       def create(name, options = {})
@@ -127,27 +115,19 @@ module Doodads
         end
       end
 
-      def flags
-        @flags ||= {}.with_indifferent_access
-      end
-
       # Auto-register subclasses in the registry
       def inherited(subclass)
         # :nocov:
         unless subclass.module_parents.include?(Doodads::Components)
           # Directly subclassed e.g. in `app/components` or `app/doodads`; go ahead and add to the registry directly
           TracePoint.trace(:end) do |trace|
-            if subclass == trace.self
+            if trace.self == subclass
               Doodads::Components.register(subclass.as, subclass)
               trace.disable
             end
           end
         end
         # :nocov:
-      end
-
-      def wrappers
-        @wrappers ||= []
       end
 
       VALID_TAGS = %i[

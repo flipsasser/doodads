@@ -3,17 +3,15 @@
 module ApplicationHelper
   include Doodads::Helper
 
-  flags :status, %i[informational success danger warning]
+  flags %i[informational success danger warning]
 
-  component :button do
-    use_flags :status
-  end
+  component :button
 
   component :nav do
-    component :logo, tagname: :img
+    component :logo, tag: :img
 
     wrapper :ol, class: "nav-list" do
-      component :item, link: :nested, tagname: :li
+      component :item, link: :nested, tag: :li
     end
   end
 end

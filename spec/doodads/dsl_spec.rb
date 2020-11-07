@@ -7,14 +7,16 @@ module BaseHelper
 end
 
 RSpec.describe Doodads::DSL do
+  before do
+    BaseHelper.component_flags.clear
+  end
+
   describe ".included" do
     it "warns people not to include the DSL" do
       allow(Rails.logger).to receive(:warn).with(an_instance_of(String))
-      module BadInclude
-        include Doodads::DSL
-      end
+      BaseHelper.send :include, described_class
 
-      expect(Rails.logger).to have_received(:warn).with("It looks like you mixed the Doodads::DSL into BadInclude using `include`. Use `extend` instead to generate a DSL for quickly defining Component classes without complex logic. Please double-check the README to ensure you want to mix it in this way!")
+      expect(Rails.logger).to have_received(:warn).with("It looks like you mixed the Doodads::DSL into BaseHelper using `include`. Use `extend` instead to generate a DSL for quickly defining Component classes without complex logic. Please double-check the README to ensure you want to mix it in this way!")
     end
   end
 
@@ -71,16 +73,6 @@ RSpec.describe Doodads::DSL do
         expect(button.link_optional?).to eq(true)
       end
 
-      it "accepts `link_optional: true`" do
-        button = BaseHelper.component(:button, link_optional: true)
-        expect(button.link_optional?).to eq(true)
-      end
-
-      it "accepts `link_optional: false`" do
-        button = BaseHelper.component(:button, link_optional: false)
-        expect(button.link_required?).to eq(false)
-      end
-
       it "assumes links are not nested" do
         button = BaseHelper.component(:button, link: true)
         expect(button.link_nested?).to eq(false)
@@ -96,8 +88,8 @@ RSpec.describe Doodads::DSL do
         expect(button.link_required?).to eq(true)
       end
 
-      it "does not require links when `link: :nested, link_optional: true`" do
-        button = BaseHelper.component(:button, link: :nested, link_optional: true)
+      it "does not require links when `link: [:nested, :optional]`" do
+        button = BaseHelper.component(:button, link: %i[nested optional])
         expect(button.link_required?).to eq(false)
       end
     end
@@ -127,34 +119,34 @@ RSpec.describe Doodads::DSL do
       end
     end
 
-    describe "when configuring the tagname" do
-      it "accepts a tagname override" do
-        button = BaseHelper.component :sparkle, tagname: :ol
-        expect(button.tagname).to eq(:ol)
+    describe "when configuring the tag" do
+      it "accepts a tag override" do
+        button = BaseHelper.component :sparkle, tag: :ol
+        expect(button.tag).to eq(:ol)
       end
 
-      it "infers tagname when the component name is a valid HTML element" do
+      it "infers tag when the component name is a valid HTML element" do
         nav = BaseHelper.component :nav
-        expect(nav.tagname).to eq(:nav)
+        expect(nav.tag).to eq(:nav)
       end
     end
 
     it "re-defines components with new options" do
       button = BaseHelper.component :button
-      expect(button.tagname).to eq(:button)
+      expect(button.tag).to eq(:button)
 
       expect {
-        button_redefinition = BaseHelper.component :button, tagname: :test
-        expect(button_redefinition.tagname).to eq(:test)
+        button_redefinition = BaseHelper.component :button, tag: :test
+        expect(button_redefinition.tag).to eq(:test)
       }.not_to change(Doodads::Components.registry, :length).from(1)
     end
   end
 
   describe "#flag" do
-    it "throws an error outside of a component context" do
+    it "defines a global flag outside of a component" do
       expect {
         BaseHelper.flag :is_active
-      }.to raise_error(Doodads::Errors::ComponentRequiredError)
+      }.to change(BaseHelper.component_flags, :count).from(0).to(1)
     end
 
     it "defines a flag on a component" do
@@ -162,7 +154,7 @@ RSpec.describe Doodads::DSL do
         flag :is_active
       }
 
-      expect(button.flags[:is_active]).to eq(:is_active)
+      expect(button.component_flags[:is_active]).to eq({value: :is_active}.with_indifferent_access)
     end
 
     it "aliases a flag name to its value on a component" do
@@ -170,44 +162,65 @@ RSpec.describe Doodads::DSL do
         flag :is_active, "button-is-active"
       }
 
-      expect(button.flags[:is_active]).to eq("button-is-active")
+      expect(button.component_flags[:is_active]).to eq({value: "button-is-active"}.with_indifferent_access)
     end
   end
 
   describe "#flags" do
-    it "throws an error inside of a component" do
-      expect {
-        BaseHelper.component(:button) {
-          flags :statuses, %i[informational danger success warning]
-        }
-      }.to raise_error(Doodads::Errors::NoComponentRequiredError)
+    it "adds flags the that component ONLY" do
+      button = BaseHelper.component(:button) {
+        flags %i[danger success warning]
+      }
+
+      badge = BaseHelper.component(:badge) {
+        flags %i[bad good fun]
+      }
+
+      expect(button.component_flags.keys).to eq(%w[danger success warning])
+      expect(badge.component_flags.keys).to eq(%w[bad good fun])
+      expect(BaseHelper.component_flags).to be_empty
     end
 
     describe "with an array" do
       it "converts the flags to a hash" do
-        BaseHelper.flags :status_array, %i[informational danger success warning]
-        expect(Doodads::Flags[:status_array]).to eq({
-          informational: :informational,
-          danger: :danger,
-          success: :success,
-          warning: :warning,
+        BaseHelper.flags %i[informational danger success warning]
+        expect(BaseHelper.component_flags).to eq({
+          informational: {
+            value: :informational,
+          },
+          danger: {
+            value: :danger,
+          },
+          success: {
+            value: :success,
+          },
+          warning: {
+            value: :warning,
+          },
         }.with_indifferent_access)
       end
     end
 
     describe "with a hash" do
       it "uses the hash values" do
-        BaseHelper.flags :status_hash,
-          pending: :info,
-          failed: :danger,
-          succeeded: :success,
-          paused: :warning
+        BaseHelper.flags pending: :info,
+                         failed: :danger,
+                         succeeded: :success,
+                         paused: :warning
 
-        expect(Doodads::Flags[:status_hash]).to eq({
-          pending: :info,
-          failed: :danger,
-          succeeded: :success,
-          paused: :warning,
+        expect(BaseHelper.component_flags).to eq({
+          pending: {
+            value: :info,
+          },
+          failed: {
+            value: :danger,
+          },
+          succeeded: {
+            value: :success,
+          },
+          paused: {
+            value: :warning,
+          },
         }.with_indifferent_access)
       end
     end
@@ -217,7 +230,7 @@ RSpec.describe Doodads::DSL do
     it "throws an error outside of a component context" do
       expect {
         BaseHelper.wrapper :ul
-      }.to raise_error(Doodads::Errors::ComponentRequiredError)
+      }.to raise_error(NoMethodError)
     end
 
     it "defines a custom wrapper inside a component" do
@@ -227,7 +240,7 @@ RSpec.describe Doodads::DSL do
 
       wrapper = button.wrappers.last
       expect(wrapper).to be_instance_of(Doodads::Component::Wrapper)
-      expect(wrapper.tagname).to eq(:span)
+      expect(wrapper.tag).to eq(:span)
     end
   end
 end

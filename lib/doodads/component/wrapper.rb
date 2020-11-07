@@ -3,10 +3,10 @@
 module Doodads
   class Component
     class Wrapper
-      attr_reader :class_name, :options, :tagname
+      attr_reader :class_name, :options, :tag
 
-      def initialize(tagname, options = {})
-        @tagname = tagname
+      def initialize(tag, options = {})
+        @tag = tag
         @class_name = options.delete(:class)
         @options = options
       end

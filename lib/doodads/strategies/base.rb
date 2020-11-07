@@ -5,15 +5,15 @@ module Doodads
     # Base CSS strategy: provides required methods that must be overridden by subclasses
     class Base
       def child_name_for(*chain)
-        raise NotImplementedError.new("#{self.class}#child_name_for(*chain) is not implemented")
+        chain.map { |link| object_to_class_name(link) }.join(" ")
       end
 
       def class_name_for(name, parent: nil)
-        raise NotImplementedError.new("#{self.class}#class_name_for(name, parent: nil) is not implemented")
+        object_to_class_name name
       end
 
       def flag_name_for(name, flag:)
-        raise NotImplementedError.new("#{self.class}#flag_name_for(name, flag:) is not implemented")
+        object_to_class_name flag
       end
 
       private

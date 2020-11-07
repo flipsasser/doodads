@@ -22,14 +22,13 @@ RSpec.configure do |config|
   config.disable_monkey_patching!
   config.example_status_persistence_file_path = ".rspec_status"
   config.filter_rails_from_backtrace!
-  # config.filter_run focus: true
+  config.filter_run_when_matching :focus
   config.use_active_record = false
 
   config.before do |example|
     unless example.metadata[:clear] == false
       Doodads::Components.registry.clear
       Doodads::Components.constants.each { |const| Doodads::Components.send(:remove_const, const) }
-      Doodads::Flags.clear
       Doodads::Strategies.all.clear
     end
   end

@@ -1,10 +1,15 @@
 # frozen_string_literal: true
 
 require "doodads/errors"
+require "doodads/flags"
 require "doodads/helper"
 
 module Doodads
   module DSL
+    def self.extended(base)
+      base.extend Doodads::Flags
+    end
+
     def self.included(base)
       unless Doodads.config.suppress_include_dsl_warning
         message = "It looks like you mixed the Doodads::DSL into #{base} using `include`."
@@ -14,6 +19,7 @@ module Doodads
       end
     end
 
+    # Define a component class in this class' component registry
     def component(name, options = {}, &block)
       # Build the component - either within a parent component, or at the root level
       context = respond_to?(:create_component) ? self : Doodads::Components
@@ -32,9 +38,21 @@ module Doodads
       component
     end
 
-    def flags(name, options, global: false, type: :class_name)
-      options = Hash[*options.map { |option| [option, option] }.flatten] if options.is_a?(Array)
-      Doodads::Flags[name] = options.with_indifferent_access
+    # Define a flag that can be used when rendering a component
+    def flag(*args)
+      options = args.extract_options!
+      options = options.with_indifferent_access
+      name = args.shift
+      value = args.shift || name
+      options[:value] ||= value
+      component_flags[name] = options
+    end
+
+    # Define multiple flags that can be used when rendering a component
+    def flags(flags, options = {})
+      flags.each do |name, flag|
+        flag(name, flag || name, options)
+      end
     end
   end
 end

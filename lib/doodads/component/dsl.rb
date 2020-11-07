@@ -3,25 +3,24 @@
 module Doodads
   class Component
     module DSL
-      def flag(name, value = name, global: false, type: :class_name)
-        flags[name] = {
-          type: type,
-          value: value,
-        }
-      end
-
-      def use_flags(name)
-        flags = Doodads::Flags[name]
-        raise Doodads::Errors::FlagSetMissing.new(name) if flags.blank?
-
-        flags.each do |flag, value|
-          flag(flag, value)
+      def wrapper(tag, options = {}, &block)
+        if @reset_wrappers
+          wrappers.clear
+          @reset_wrappers = false
         end
+
+        options = options.with_indifferent_access
+
+        wrapper_class_name = options.delete(:class)
+        options[:class] = strategy.child_name_for(class_name, wrapper_class_name) if wrapper_class_name.present?
+
+        wrappers.push(Wrapper.new(tag, options))
+
+        instance_eval(&block) if block_given?
       end
 
-      def wrapper(tagname, options = {}, &block)
-        @_current_component.add_wrapper(tagname, options)
-        instance_eval(&block) if block_given?
+      def wrappers
+        @wrappers ||= []
       end
     end
   end
