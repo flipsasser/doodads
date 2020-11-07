@@ -2,8 +2,9 @@
 
 A DIY component library for Rails, with full ARIA accessibility baked in.
 
-<table cellpadding="0" cellspacing="0" width="100%">
-  <tr><td rowspan="4">
+<table cellpadding="0" cellspacing="0" width="100%"><tr><td rowspan="2">
+
+**Step 1:** Define a component
 
 ```ruby
 module ApplicationHelper
@@ -24,9 +25,9 @@ module ApplicationHelper
 end
 ```
 
-    </td><th>ERB</th>
-  </tr>
-  <tr><td>
+  </td><td>
+
+**Step 2:** Use the generated helpers in your templates:
 
 ```erb
 <%= cards do %>
@@ -39,9 +40,9 @@ end
 <% end %>
 ```
 
-  </td></tr>
-  <tr><th>Output</th></tr>
-  <tr><td>
+  </td></tr><tr><td>
+
+**Step 3:** Enjoy fully-built and easily styled, encapsulated HTML components!
 
 ```html
 <div class="cards">
@@ -59,8 +60,7 @@ end
 </div>
 ```
 
-  </td></tr>
-</table>
+</td></tr></table>
 
 Meet Doodads! This poorly-named but well-built Rails engine does exactly two things really well:
 
