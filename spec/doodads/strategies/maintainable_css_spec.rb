@@ -9,6 +9,10 @@ RSpec.describe Doodads::Strategies do
   let(:parent) { Doodads::Components.create_component(:parent).new(rendering_context) }
   let(:items) { Doodads::Components.create_component(:items).new(rendering_context) }
 
+  before do
+    allow(rendering_context).to receive(:safe_join) { |*args| args.inject("") { |output, arg| "#{output} #{arg}".strip } }
+  end
+
   it "generates sane root component names" do
     expect(strategy.class_name_for(:parent)).to eq("parent")
   end

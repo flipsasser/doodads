@@ -17,10 +17,9 @@ module Doodads
 
           # Add some basic options
           add_option :class_name, default: -> { as } do |new_class_name|
-            strategy.class_name_for(new_class_name.to_s, parent: parent)
+            strategy.class_name_for(new_class_name.to_s, parent: parent_component)
           end
           add_option :default_options, default: {}
-          add_option :parent
           add_option :tag, default: :div
 
           # Add link options - they're more complex
@@ -51,7 +50,8 @@ module Doodads
       def add_option(name, default: nil, &setter)
         variable = "@#{name}".to_sym
 
-        # Add a class method that accepts a single value as an override, or returns the value if called without any args
+        # Add a class method that accepts a single value as an override, or returns the value if
+        # called without any args
         define_singleton_method(name) do |*args|
           if args.none?
             ## Called as an accessor
@@ -91,19 +91,27 @@ module Doodads
         @reset_wrappers = true # We want to reset the wrapper hierarchy in case a block will be adding wrappers
 
         # Some basic configuration stuff
-        as name
-        parent options.delete(:parent)
-        class_name options.delete(:class)
-        strategy options.delete(:strategy)
-        tag options.delete(:tag) { VALID_TAGS.include?(name) ? name : :div }
+        as(name)
+
+        # Retain a hierarchy (in string form; accessors will receive constants looked up via
+        # `safe_constantize`). This is just for performance so we don't iterate the component chain
+        # every time something is rendered.
+        parent_component(options.delete(:parent_component))
+        root_component = self
+        root_component = root_component.parent_component while root_component&.parent_component.present?
+        @root_component = root_component&.name
+
+        class_name(options.delete(:class))
+        strategy(options.delete(:strategy))
+        tag(options.delete(:tag) { VALID_TAGS.include?(name) ? name : :div })
 
         # Links
-        link options.delete(:link)
-        link_class options.delete(:link_class)
-        link_flag options.delete(:link_flag)
+        link(options.delete(:link))
+        link_class(options.delete(:link_class))
+        link_flag(options.delete(:link_flag))
 
         # Whatever else was left goes into default options when we render an instance
-        default_options options
+        default_options(options)
 
         # Finally, add a default wrapper for the root component
         wrapper(tag, options)
@@ -128,6 +136,24 @@ module Doodads
           end
         end
         # :nocov:
+      end
+
+      def parent_component(*args)
+        if args.one?
+          self.parent_component = args.first
+        elsif args.many?
+          raise ArgumentError.new("wrong number of arguments (given #{args.length}, expected 0..1)")
+        else
+          @parent_component&.safe_constantize
+        end
+      end
+
+      def parent_component=(new_parent_component)
+        @parent_component = new_parent_component.respond_to?(:name) ? new_parent_component.name : new_parent_component
+      end
+
+      def root_component
+        @root_component&.safe_constantize
       end
 
       VALID_TAGS = %i[

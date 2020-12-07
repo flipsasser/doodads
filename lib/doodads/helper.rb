@@ -17,13 +17,21 @@ module Doodads
     end
 
     def render_doodad(name, *args, &block)
-      component_class = respond_to?(:find_component) ? find_component(name) : Doodads::Components.registry[name]
-      raise Doodads::Errors::ComponentMissingError.new(name, self.class) if is_a?(Doodads::Component) && component_class.blank?
+      in_doodad = is_a?(Doodads::Component)
+      component_class = in_doodad && find_component(name)
+      component_class ||= Doodads::Components.registry[name]
+      raise Doodads::Errors::ComponentMissingError.new(name, in_doodad ? self.class : nil) if component_class.blank?
 
       # Pass the current context in - will either be the view itself (when calling a root-level
       # component), which includes ApplicationHelper or whichever other helper Doodads was mixed
       # into, OR it will be an instance of a component, which has access to the view context
-      component_class.new(is_a?(Doodads::Component) ? view_context : self, *args, &block)
+      if in_doodad
+        options = args.extract_options!
+        options[:parent_instance] = self
+        args.push(options)
+      end
+
+      component_class.new(in_doodad ? view_context : self, *args, &block)
     end
   end
 end

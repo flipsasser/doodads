@@ -21,9 +21,13 @@ module Doodads
 
     # Define a component class in this class' component registry
     def component(name, options = {}, &block)
-      # Build the component - either within a parent component, or at the root level
-      context = respond_to?(:create_component) ? self : Doodads::Components
-      component = context.create_component(name, options.merge(parent: self))
+      # Build the component - either within another component's registry, or at the root level
+      context = if respond_to?(:create_component)
+        options[:parent_component] = self
+      else
+        Doodads::Components
+      end
+      component = context.create_component(name, options)
 
       # Evaluate additional DSL configuration stuff inside of the component we're creating
       component.instance_exec(&block) if block_given?

@@ -11,6 +11,8 @@ module Doodads
       active_flag: "active",
       link_class: "link",
       link_flag: "has-link",
+      primary_content_class: "content",
+      primary_content_wrapper: :span,
       strategy: :maintainable_css,
       suppress_include_dsl_warning: false,
     )

@@ -18,8 +18,9 @@ module Doodads
         class_name = clean(name)
         return class_name unless parent&.respond_to?(:class_name)
 
-        # Determine if we have a singular component nested in a plural wrapper, e.g. ".menu > .menu-items > .menu-item"
-        # Per the Maintainable CSS handbook, rather than "menu-items-item", this should be "menu-item"
+        # Determine if we have a singular component nested in a plural wrapper,
+        # e.g. ".menu > .menu-items > .menu-item" Per the Maintainable CSS handbook, rather than
+        # "menu-items-item", this should be "menu-item"
         singular = class_name.singularize
         plural = /#{class_name.pluralize}$/
         if class_name == singular && parent.class_name.match?(plural)

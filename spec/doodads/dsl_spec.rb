@@ -48,7 +48,7 @@ RSpec.describe Doodads::DSL do
       end
 
       it "tracks the parent class" do
-        expect(button.registry[:label].parent).to eq(button)
+        expect(button.registry[:label].parent_component).to eq(button)
       end
     end
 
