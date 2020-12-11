@@ -32,11 +32,18 @@ module Doodads
       # Evaluate additional DSL configuration stuff inside of the component we're creating
       component.instance_exec(&block) if block_given?
 
-      # Finally, add a named method to just find a component by that name and render it to the helper module
+      # Finally, named methods to just find a component by that name and render it to the helper module
       class_eval <<-EOC, __FILE__, __LINE__ + 1
   def #{name}(*args, &block)
     render_doodad(:#{name}, *args, &block)
+  end#{if component # .list?
+         %{
+
+  def #{name}_of(items, *args, &block)
+    render_doodad_list(:#{name}, items, *args, &block)
   end
+  }
+       end}
       EOC
 
       component

@@ -1,8 +1,12 @@
 # Doodads
 
-A DIY component library for Rails, with full ARIA accessibility baked in.
+Meet Doodads, a DIY component library for Rails with full ARIA accessibility baked in! This poorly-named but well-built Rails engine does exactly two things really well:
 
-<table cellpadding="0" cellspacing="0" width="100%"><tr><td rowspan="2">
+1. **It makes defining reusable view components extremely simple.** Use the extremely simple DSL to define view helpers that save you time and energy when rendering out common application components.
+
+2. **It makes adding screen reader accessibility as easy as possible.** Doodads supports quick shortcuts for `aria-` attributes, but it goes beyond that: it also allows you to **link rendered components to one-another and auto-generate Aria hierarchies** in order to make the web as easy to use for as many people as we possibly can.
+
+## Example Usage
 
 **Step 1:** Define a component
 
@@ -10,7 +14,7 @@ A DIY component library for Rails, with full ARIA accessibility baked in.
 module ApplicationHelper
   include Doodads::Helper
 
-  component :button, link: :optional, tag: :button do
+  component :button, link: :optional do
     flag :outline
   end
 
@@ -25,22 +29,16 @@ module ApplicationHelper
 end
 ```
 
-  </td><td>
-
 **Step 2:** Use the generated helpers in your templates:
 
-```erb
-<%= cards do %>
-  <%= item flush: true do %>
-    <h2>This card uses nested content</h2>
-    <%= button "Open a new page", "https://github.com/", outline: true, target: "_github" %>
-    <%= action "Learn more", about_path %>
-  <% end %>
-  <%= cards.item "Go Home", root_path, compact: true %>
-<% end %>
+```slim
+= cards do
+  = item flush: true do
+    h2 This card uses nested content
+    = button "Open a new page", "https://github.com/", outline: true, target: "_github"
+    = action "Learn more", about_path
+  = item "Go Home", root_path, compact: true
 ```
-
-  </td></tr><tr><td>
 
 **Step 3:** Enjoy fully-built and easily styled, encapsulated HTML components!
 
@@ -60,12 +58,6 @@ end
 </div>
 ```
 
-</td></tr></table>
-
-Meet Doodads! This poorly-named but well-built Rails engine does exactly two things really well:
-
-1. **It makes defining reusable view components extremely simple.** Use the DSL to define view helpers that save you time and energy when rendering out common application components.
-2. **It makes adding screen reader accessibility as easy as possible.** Doodads supports quick shortcuts for `aria-` linkages, but it also allows you to **link rendered components to one-another** in order to make the web as easy to use for as many people as we possibly can.
 
 ## Defining Components
 
@@ -336,7 +328,7 @@ And produce the following markup:
 
 ## Class Name Inheritance
 
-Doodads autoamtically provides context-specific classnames for nested components not related by a common hierarchy.
+Doodads automatically provides context-specific classnames for nested components not related by a common hierarchy.
 
 ```ruby
 module ApplicationHelper
